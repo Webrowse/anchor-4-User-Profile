@@ -16,12 +16,20 @@ pub mod user_profile {
         profile.username = username;
         profile.bio = bio;
         profile.bump = ctx.bumps.profile;
-        
+
         Ok(())
     }
 
     pub fn update_profile(ctx: Context<UpdateProfile>, username: String, bio: String) -> Result<()> {
+        require!(username.len() <= Profile::MAX_USERNAME, ProfileError::UsernameTooLong);
+        require!(bio.len() <= Profile::MAX_BIO, ProfileError::BioTooLong);
 
+        let profile = &mut ctx.accounts.profile;
+        require!(profile.authority == ctx.accounts.user.key(), ProfileError::Unauthorized);
+
+        profile.username = username;
+        profile.bio = bio;
+        
         Ok(())
     }
 }
