@@ -7,7 +7,16 @@ pub mod user_profile {
     use super::*;
 
     pub fn initialize_profile(ctx: Context<InitializeProfile>, username: String, bio: String) -> Result<()> {
+        require!(username.len() <= Profile::MAX_USERNAME, ProfileError::UsernameTooLong);
+        require!(bio.len() <= Profile::MAX_BIO, ProfileError::BioTooLong);
 
+        let profile = &mut ctx.accounts.profile;
+
+        profile.authority = ctx.accounts.user.key();
+        profile.username = username;
+        profile.bio = bio;
+        profile.bump = ctx.bumps.profile;
+        
         Ok(())
     }
 
@@ -24,7 +33,7 @@ pub struct InitializeProfile<'info> {
         payer = user,
         seeds = [b"profile",user.key().as_ref()],
         bump,
-        space = Profile::INIT_SPACE,
+        space = Profile::MAX_SIZE,
     )]
     pub profile: Account<'info, Profile>,
     
@@ -54,6 +63,12 @@ pub struct Profile {
     pub username: String,
     #[max_len(256)]
     pub bio: String,
+}
+
+impl Profile{
+    pub const MAX_USERNAME: usize = 32;
+    pub const MAX_BIO: usize = 256;
+    pub const MAX_SIZE: usize = 8 + 32 + 1 + 4 + Self::MAX_USERNAME + 4 + Self::MAX_BIO;
 }
 
 #[error_code]
