@@ -1,16 +1,41 @@
 import * as anchor from "@coral-xyz/anchor";
-import { Program } from "@coral-xyz/anchor";
-import { UserProfile } from "../target/types/user_profile";
 
-describe("user_profile", () => {
-  // Configure the client to use the local cluster.
-  anchor.setProvider(anchor.AnchorProvider.env());
+describe("user_profile", () =>{
+  const provider = anchor.AnchorProvider.local();
+  anchor.setProvider(provider);
 
-  const program = anchor.workspace.userProfile as Program<UserProfile>;
+  const program = anchor.workspace.UserProfile;
+  const user = provider.wallet.publicKey;
 
-  it("Is initialized!", async () => {
-    // Add your test here.
-    const tx = await program.methods.initialize().rpc();
-    console.log("Your transaction signature", tx);
+  const [profilePda] = anchor.web3.PublicKey.findProgramAddressSync(
+    [Buffer.from("profile"), user.toBuffer()],
+    program.programId
+  );
+
+  it("initialize profile", async () => {
+    await program.methods
+      .initializeProfile("Adarsh", "Solana Auditor")
+      .accounts({
+        profile: profilePda,
+        user: user,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .rpc();
+
+      const acc = await program.account.profile.fetch(profilePda);
+      console.log(acc);
   });
-});
+
+  it("updates profile", async () => {
+    await program.methods
+      .updateProfile("romy", "now leveling up")
+      .accounts({
+        profile: profilePda,
+        user: user,
+      })
+      .rpc();
+
+      const acc = await program.account.profile.fetch(profilePda);
+      console.log(acc);
+  });
+})
